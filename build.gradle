@@ -1,0 +1,61 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.13'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.wilsonks1982'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation ('org.springframework.boot:spring-boot-starter-web')
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+//	Spring Data JDBC is a part of the Spring Data project that provides support for JDBC-based data access.
+//	It allows you to interact with relational databases using JDBC while still benefiting from Spring's features
+//	such as dependency injection, transaction management, and more.
+	implementation ('org.springframework.boot:spring-boot-starter-data-jdbc')
+
+//	H2 is an in-memory database that is often used for testing and development purposes.
+//	It allows you to create a lightweight, embedded database that can be easily set up and torn down during testing.
+	implementation('com.h2database:h2')
+
+// Spring Security is a powerful and highly customizable authentication and access-control framework for Java applications.
+	implementation('org.springframework.boot:spring-boot-starter-security')
+
+//	Lombok is a compile-time only dependency, so we use `compileOnly` and `annotationProcessor` configurations for it. We also need to include it in the test configurations to ensure that Lombok annotations work in our test code.
+	compileOnly('org.projectlombok:lombok')
+	annotationProcessor('org.projectlombok:lombok')
+	testCompileOnly('org.projectlombok:lombok')
+	testAnnotationProcessor('org.projectlombok:lombok')
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+// This section causes useful test output to go to the terminal.
+test {
+	testLogging {
+		events "passed", "skipped", "failed" //, "standardOut", "standardError"
+
+		showExceptions true
+		exceptionFormat "full"
+		showCauses true
+		showStackTraces true
+
+		// Change to `true` for more verbose test output
+		showStandardStreams = true
+	}
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "cardNumber": "1234567890",
+    "balance": 100.0,
+    "owner": "jackson"
+  },
+  {
+    "id": 2,
+    "cardNumber": "0987654321",
+    "balance": 50.0,
+    "owner": "jackson"
+  }
+]
