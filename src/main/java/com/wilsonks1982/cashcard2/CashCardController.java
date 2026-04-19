@@ -1,6 +1,11 @@
 package com.wilsonks1982.cashcard2;
 
+import com.wilsonks1982.cashcard2.data_transfer.ApiError;
 import com.wilsonks1982.cashcard2.data_transfer.CashCard;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -8,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.Optional;
 
 @Slf4j
@@ -24,10 +30,20 @@ public class CashCardController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<CashCard> createCashCard(@RequestBody CashCard cashCard) {
+    public ResponseEntity<CashCard> createCashCard(
+            @Valid @RequestBody CashCard cashCard,
+            Principal principal) {
         log.info("Received request to create CashCard: " + cashCard);
+        log.info("Authenticated user: " + principal.getName());
 
-        CashCard savedCashCard = cashCardCustomRepository.insert(cashCard);
+        CashCard newCashCard = new CashCard(
+                null,
+                cashCard.cardNumber(),
+                cashCard.balance(),
+                principal.getName()
+        );
+
+        CashCard savedCashCard = cashCardCustomRepository.insert(newCashCard);
         return ResponseEntity.created(
                 java.net.URI.create("/cashcard/" + savedCashCard.id())
         ).body(savedCashCard);
@@ -35,10 +51,14 @@ public class CashCardController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<CashCard> getCashCardById(@PathVariable Long id) {
+    public ResponseEntity<CashCard> getCashCardById(
+            @PathVariable @Positive(message = "ID must be a positive number") Long id,
+            Principal principal) {
 
         log.info("Received request for CashCard with id: " + id);
-        Optional<CashCard> cashCardOpt = cashCardCustomRepository.findById(id);
+        log.info("Authenticated user: " + principal.getName());
+
+        Optional<CashCard> cashCardOpt = cashCardDataRepository.findByIdAndOwner(id, principal.getName());
         return cashCardOpt.map(
                 cashCard -> ResponseEntity.ok(cashCard)
         ).orElseGet(() -> ResponseEntity.notFound().build());
@@ -46,9 +66,16 @@ public class CashCardController {
     }
 
     @GetMapping("/")
-    public ResponseEntity<Iterable<CashCard>> getAllCashCard(Pageable pageable) {
+    public ResponseEntity<Iterable<CashCard>> getAllCashCard(
+            Pageable pageable,
+            Principal principal) {
         log.info("Received request for all CashCards with pagination: " + pageable);
-        Iterable<CashCard> cashCards = cashCardDataRepository.findAll(
+        log.info("Authenticated user: " + principal.getName());
+
+        String owner = principal.getName();
+
+        Iterable<CashCard> cashCards = cashCardDataRepository.findByOwner(
+                owner,
                 PageRequest.of(
                         pageable.getPageNumber(),
                         pageable.getPageSize(),
@@ -58,14 +85,70 @@ public class CashCardController {
         return ResponseEntity.ok(cashCards);
     }
 
-    @GetMapping("/cardnumber/{cardNumber}")
-    public ResponseEntity<CashCard> getCashCardByCardNumber(@PathVariable String cardNumber) {
+    @GetMapping("/search")
+    public ResponseEntity<CashCard> getCashCardByCardNumber(
+            @RequestParam(defaultValue = "1111111111") @NotBlank @Pattern(regexp = "\\d{10}", message = "Card number must be exactly 10 digits")
+            String cardNumber,
+            Principal principal) {
         log.info("Received request for CashCard with card number: " + cardNumber);
+        log.info("Authenticated user: " + principal.getName());
+
         Optional<CashCard> cashCardOpt = cashCardCustomRepository.findByCardNumber(cardNumber);
         return cashCardOpt.map(
                 cashCard -> ResponseEntity.ok(cashCard)
         ).orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CashCard> updateCashCard(
+            @PathVariable @Positive(message = "ID must be a positive number") Long id,
+            @RequestBody @Valid CashCard cashCard,
+            Principal principal) {
+        log.info("Received request to update CashCard with id: " + id);
+        log.info("Update data: " + cashCard);
+        log.info("Authenticated user: " + principal.getName());
+
+        String owner = principal.getName();
+
+        Optional<CashCard> existingCashCardOpt = cashCardDataRepository.findById(id);
+        if (existingCashCardOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        //Check if owner change request is valid (should not be allowed)
+        if (!existingCashCardOpt.get().owner().equals(cashCard.owner())) {
+            //Owner change is not allowed, return forbidden
+            return ResponseEntity.status(403).build();
+        }
+
+        CashCard updatedCashCard = existingCashCardOpt.map(
+                existingCashCard -> new CashCard(
+                        existingCashCard.id(),
+                        cashCard.cardNumber(),
+                        cashCard.balance(),
+                        existingCashCard.owner()
+                )
+        ).orElseThrow(); //This should never happen since we already checked for existence
+        cashCardDataRepository.save(updatedCashCard);
+        return ResponseEntity.ok(updatedCashCard);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCashCard(
+            @PathVariable @Positive(message = "ID must be a positive number") Long id,
+            Principal principal) {
+        log.info("Received request to delete CashCard with id: " + id);
+        log.info("Authenticated user: " + principal.getName());
+
+        Optional<CashCard> existingCashCardOpt = cashCardDataRepository.findByIdAndOwner(id, principal.getName());
+        if (existingCashCardOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        cashCardDataRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
 
 }
 

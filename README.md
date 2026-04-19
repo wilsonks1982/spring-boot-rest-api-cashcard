@@ -18,25 +18,33 @@ A cashcard is a simple object that has an ID, a name, and a balance. The API all
 ## Getting Started
 
 ### Spring Initializr
+#### Project Metadata
+- Group: com.wilsonks1982
+- Artifact: rest-api-cashcard
+- Name: Cashcard API
+- Description: A simple RESTful API for managing cashcards using Spring Boot and TDD
+- Package Name: com.wilsonks1982.cashcard2
+- Packaging: Jar
+- Java: 17
+#### Create a new Spring Boot project using Spring Initializr with the following dependencies:
+- Spring Web
+- Spring Data JDBC
+- Spring Security
+- H2 Database
+- Lombok
 
-### API Contract
-
-### Writing Tests
+### Test Driven Development (TDD) Approach
 
 #### Unit Tests
+##### CashCard Record
+##### CashCard JSON Serialization/Deserialization
+
 #### Integration Tests
+##### Testing the GET API
+##### Testing the POST API
+##### Testing the PUT API
+##### Testing the DELETE API
 
-### Implementing the GET API
-
-### Spring Data JPA
-
-### Implementing the POST API
-### Implementing the PUT API
-### Implementing the DELETE API
-
-### Exception Handling
-
-### API Documentation
 
 ### Running the Application
 
@@ -44,7 +52,7 @@ A cashcard is a simple object that has an ID, a name, and a balance. The API all
 
 ### Deploying the Application
 
-
 ### To Do
-#### 1. Remove hardcoded credentials → Use environment variables
-#### 2. Replace In-Memory Users with Database
+#### Remove hardcoded credentials → Use environment variables
+#### Replace In-Memory Users with Database
+#### Implement Role-Based Access Control (RBAC)

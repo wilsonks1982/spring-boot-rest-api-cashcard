@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.13'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
 }
 
 group = 'com.wilsonks1982'
@@ -18,9 +19,16 @@ repositories {
 }
 
 dependencies {
+//  Spring Boot Starter Web provides the necessary dependencies to build web applications, including RESTful services, using Spring MVC.
+//  It includes an embedded Tomcat server by default, allowing you to run your application without needing to deploy it to an external server.
 	implementation ('org.springframework.boot:spring-boot-starter-web')
+
+//  Spring Boot Starter Test provides a comprehensive set of testing libraries and tools for testing Spring Boot applications.
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+//  Spring Boot Starter Validation provides support for Java Bean Validation using Hibernate Validator as the default implementation.
+//  It allows you to easily add validation constraints to your Java beans and have them automatically validated when used in your application.
+	implementation('org.springframework.boot:spring-boot-starter-validation')
 
 //	Spring Data JDBC is a part of the Spring Data project that provides support for JDBC-based data access.
 //	It allows you to interact with relational databases using JDBC while still benefiting from Spring's features
@@ -39,10 +47,54 @@ dependencies {
 	annotationProcessor('org.projectlombok:lombok')
 	testCompileOnly('org.projectlombok:lombok')
 	testAnnotationProcessor('org.projectlombok:lombok')
+
+// JUnit Platform Launcher is a part of the JUnit 5 testing framework that provides the ability to launch and execute tests on the JUnit Platform.
+// It allows you to run tests from various testing frameworks (like JUnit 4, JUnit 5, and others) in a unified way.
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy jacocoTestReport // report is always generated after tests run
+}
+// JaCoCo configuration for generating code coverage reports
+jacoco {
+	toolVersion = "0.8.10"
+}
+
+jacocoTestReport {
+	dependsOn test
+
+	reports {
+		xml.required = true
+		html.required = true
+		csv.required = false
+	}
+
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+					'**/config/**',
+					'**/dto/**',
+					'**/entity/**',
+					'**/model/**'
+			])
+		}))
+	}
+}
+
+// Code coverage verification
+jacocoTestCoverageVerification {
+	violationRules {
+		rule {
+			element = 'CLASS'
+			excludes = ['**/config/**', '**/dto/**', '**/entity/**']
+
+			limit {
+				minimum = 0.10  // 10% code coverage
+			}
+		}
+	}
 }
 
 // This section causes useful test output to go to the terminal.

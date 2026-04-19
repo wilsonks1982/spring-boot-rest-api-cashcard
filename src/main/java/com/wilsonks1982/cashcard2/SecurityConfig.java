@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
@@ -34,30 +35,40 @@ import org.springframework.security.web.SecurityFilterChain;
 @PropertySource("classpath:security-config.properties")
 public class SecurityConfig {
 
+    @Value("${app.security.admin.role}")
+    private String adminRole;
+    @Value("${app.security.user.role}")
+    private String userRole;
+
     @Value("${app.security.admin.username}")
     private String adminUsername;
 
     @Value("${app.security.admin.password}")
     private String adminPassword;
 
-    @Value("${app.security.admin.role}")
-    private String adminRole;
 
-    @Value("${app.security.visitor.username}")
-    private String visitorUsername;
+    @Value("${app.security.user1.username}")
+    private String user1Username;
 
-    @Value("${app.security.visitor.password}")
-    private String visitorPassword;
+    @Value("${app.security.user1.password}")
+    private String user1Password;
 
-    @Value("${app.security.visitor.role}")
-    private String visitorRole;
+    @Value("${app.security.user2.username}")
+    private String user2Username;
+
+    @Value("${app.security.user2.password}")
+    private String user2Password;
+
 
     @Bean
     SecurityFilterChain customSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(
                     request -> request.requestMatchers("/h2-console/**").permitAll()
-                                      .requestMatchers("/cashcard/**").hasRole("ADMIN")
+                                      .requestMatchers(HttpMethod.GET, "/cashcard/**").hasAnyRole(adminRole, userRole)
+                                      .requestMatchers(HttpMethod.POST,"/cashcard/**").hasAnyRole(adminRole, userRole)
+                                      .requestMatchers(HttpMethod.PUT,"/cashcard/**").hasAnyRole(adminRole, userRole)
+                                      .requestMatchers(HttpMethod.DELETE,"/cashcard/**").hasAnyRole(adminRole, userRole)
                                       .anyRequest().permitAll()//Allow all other requests without authentication
                 )
                 .httpBasic(Customizer.withDefaults())//HTTP Basic sends credentials in Base64 (easily decoded)
@@ -75,16 +86,23 @@ public class SecurityConfig {
                 .roles(adminRole)
                 .build();
 
-        UserDetails visitor = userBuilder
-                .username(visitorUsername)
-                .password(visitorPassword)
-                .roles(visitorRole)
+        UserDetails user1 = userBuilder
+                .username(user1Username)
+                .password(user1Password)
+                .roles(userRole)
+                .build();
+
+        UserDetails user2 = userBuilder
+                .username(user2Username)
+                .password(user2Password)
+                .roles(userRole)
                 .build();
 
 
         InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
         manager.createUser(admin);
-        manager.createUser(visitor);
+        manager.createUser(user1);
+        manager.createUser(user2);
         return manager;
     }
 

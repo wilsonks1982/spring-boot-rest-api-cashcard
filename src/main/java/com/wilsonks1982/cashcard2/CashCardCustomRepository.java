@@ -61,8 +61,7 @@ public class CashCardCustomRepository {
     public CashCard insert(CashCard cashCard) {
         Long newId = nextId();
         jdbcTemplate.update(
-                "INSERT INTO cash_card (id, card_number, balance, owner) VALUES (?, ?, ?, ?)",
-                newId,
+                "INSERT INTO cash_card (card_number, balance, owner) VALUES (?, ?, ?)",
                 cashCard.cardNumber(),
                 cashCard.balance(),
                 cashCard.owner()
@@ -112,5 +111,6 @@ public class CashCardCustomRepository {
 
         return balance;
     }
+
 
 }
